@@ -28,23 +28,16 @@ jobs:
             exit 1
           fi
 
-      # Stap 4: Verwijder oude bestanden op Azure Web App (optioneel)
-      - name: Clean existing files on Azure Web App
+      # Stap 4: Pak de gehele build-directory in als een ZIP-bestand
+      - name: Create ZIP of build directory
         run: |
-          curl -X POST "https://dashboardxaitrust.scm.azurewebsites.net/api/command" \
-          -u "$${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}" \
-          -d '{"command": "rm -rf /home/site/wwwroot/*"}'
+          zip -r build.zip ./build
 
-      # Stap 5: Deploy de volledige 'build'-map inclusief folder zelf
+      # Stap 5: Deploy het ZIP-bestand naar Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'dashboardxaitrust'
           slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-
-      # Stap 6: Controleer deployment
-      - name: Verify deployment
-        run: |
-          echo "Deployment completed successfully."
+          package: build.zip
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_746FF26143344A2BBB441F25209C88CF }}
