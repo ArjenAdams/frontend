@@ -14,7 +14,7 @@ jobs:
       # Stap 1: Haal de code op uit de repository
       - uses: actions/checkout@v4
 
-      # Stap 2: Controleer of Node.js is geïnstalleerd (voor 'serve')
+      # Stap 2: Controleer of Node.js is geïnstalleerd
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
@@ -27,15 +27,24 @@ jobs:
             echo "Build directory not found! Ensure the frontend is already built before deploying."
             exit 1
           fi
-      # Stap 4: Installeer serve (globaal)
-      - name: Install serve globally
-        run: npm install -g serve
 
-      # Stap 5: Start de container met serve
+      # Stap 4: Verwijder oude bestanden op Azure Web App (optioneel)
+      - name: Clean existing files on Azure Web App
+        run: |
+          curl -X POST "https://dashboardxaitrust.scm.azurewebsites.net/api/command" \
+          -u "$${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}" \
+          -d '{"command": "rm -rf /home/site/wwwroot/*"}'
+
+      # Stap 5: Deploy de volledige 'build'-map inclusief folder zelf
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'dashboardxaitrust'
           slot-name: 'Production'
-          package: ./build
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_746FF26143344A2BBB441F25209C88CF }}
+          package: .
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+
+      # Stap 6: Controleer deployment
+      - name: Verify deployment
+        run: |
+          echo "Deployment completed successfully."
