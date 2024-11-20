@@ -40,11 +40,3 @@ jobs:
           slot-name: 'Production'
           package: ./build
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_746FF26143344A2BBB441F25209C88CF }}
-
-      # Stap 6: Configureer startup command in Azure
-      - name: Set startup command in Azure
-        run: |
-          az webapp config set \
-            --name dashboardxaitrust \
-            --resource-group Group1 \
-            --startup-file "serve -s build -l 8080"
