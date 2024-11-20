@@ -28,15 +28,25 @@ jobs:
             exit 1
           fi
 
-      # Stap 4: Installeer serve (globaal)
-      - name: Install serve globally
-        run: npm install -g serve
+      # Stap 4: Verwijder oude bestanden op de App Service
+      - name: Clean existing files on Azure Web App
+        run: |
+          curl -X POST "https://${{ secrets.AZURE_APP_SERVICE_NAME }}.scm.azurewebsites.net/api/command" \
+          -u "$${{ secrets.AZURE_APP_SERVICE_USERNAME }}:${{ secrets.AZURE_APP_SERVICE_PASSWORD }}" \
+          -d '{"command": "rm -rf /home/site/wwwroot/*"}'
 
-      # Stap 5: Start de container met serve
-      - name: Deploy to Azure Web App
+      # Stap 5: Kopieer nieuwe build files
+      - name: Deploy new build files
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'dashboardxaitrust'
           slot-name: 'Production'
           package: ./build
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_746FF26143344A2BBB441F25209C88CF }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+
+      # Stap 6: Installeer en start 'serve' op de App Service
+      - name: Run serve on App Service
+        run: |
+          curl -X POST "https://${{ secrets.AZURE_APP_SERVICE_NAME }}.scm.azurewebsites.net/api/command" \
+          -u "$${{ secrets.AZURE_APP_SERVICE_USERNAME }}:${{ secrets.AZURE_APP_SERVICE_PASSWORD }}" \
+          -d '{"command": "npm install -g serve && serve -l 8080 /home/site/wwwroot"}'
