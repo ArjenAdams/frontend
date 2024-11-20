@@ -1,22 +1,50 @@
-name: Deploy Frontend to Azure
+name: Deploy built frontend to Azure Web App - dashboardxaitrust
 
 on:
   push:
     branches:
-      - main  # Pas dit aan naar je gewenste branch
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Stap 1: Haal de code op uit de repository
+      - uses: actions/checkout@v4
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: dashboardxaitrust   # Vervang dit door de naam van jouw Azure Web App
-        slot-name: production
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: ./frontend/build
+      # Stap 2: Controleer of Node.js is geïnstalleerd (voor 'serve')
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      # Stap 3: Controleer of build-directory aanwezig is
+      - name: Verify build directory exists
+        run: |
+          if [ ! -d "./build" ]; then
+            echo "Build directory not found! Ensure the frontend is already built before deploying."
+            exit 1
+          fi
+
+      # Stap 4: Installeer serve (globaal)
+      - name: Install serve globally
+        run: npm install -g serve
+
+      # Stap 5: Start de container met serve
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'dashboardxaitrust'
+          slot-name: 'Production'
+          package: ./build
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_746FF26143344A2BBB441F25209C88CF }}
+
+      # Stap 6: Configureer startup command in Azure
+      - name: Set startup command in Azure
+        run: |
+          az webapp config set \
+            --name dashboardxaitrust \
+            --resource-group <your-resource-group> \
+            --startup-file "serve -s build -l 8080"
