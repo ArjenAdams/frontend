@@ -46,5 +46,5 @@ jobs:
         run: |
           az webapp config set \
             --name dashboardxaitrust \
-            --resource-group <your-resource-group> \
+            --resource-group Group1 \
             --startup-file "serve -s build -l 8080"
