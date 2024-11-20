@@ -14,8 +14,8 @@ jobs:
       # Stap 1: Haal de code op uit de repository
       - uses: actions/checkout@v4
 
-      # Stap 2: Controleer of Node.js is geïnstalleerd
-      - name: Set up Node.js
+      # Stap 2: Controleer of Node.js is geïnstalleerd (voor 'serve')
+      - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
@@ -28,18 +28,25 @@ jobs:
             exit 1
           fi
 
-      # Stap 4: Verwijder oude bestanden (optioneel)
+      # Stap 4: Verwijder oude bestanden op de App Service
       - name: Clean existing files on Azure Web App
         run: |
-          curl -X POST "https://dashboardxaitrust.scm.azurewebsites.net/api/command" \
-          -u "${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}" \
+          curl -X POST "https://${{ secrets.AZURE_APP_SERVICE_NAME }}.scm.azurewebsites.net/api/command" \
+          -u "$${{ secrets.AZURE_APP_SERVICE_USERNAME }}:${{ secrets.AZURE_APP_SERVICE_PASSWORD }}" \
           -d '{"command": "rm -rf /home/site/wwwroot/*"}'
 
-      # Stap 5: Deploy nieuwe bestanden met publish profile
-      - name: Deploy to Azure Web App
+      # Stap 5: Kopieer nieuwe build files
+      - name: Deploy new build files
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'dashboardxaitrust'
           slot-name: 'Production'
           package: ./build
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+
+      # Stap 6: Installeer en start 'serve' op de App Service
+      - name: Run serve on App Service
+        run: |
+          curl -X POST "https://${{ secrets.AZURE_APP_SERVICE_NAME }}.scm.azurewebsites.net/api/command" \
+          -u "$${{ secrets.AZURE_APP_SERVICE_USERNAME }}:${{ secrets.AZURE_APP_SERVICE_PASSWORD }}" \
+          -d '{"command": "npm install -g serve && serve -l 8080 /home/site/wwwroot"}'
